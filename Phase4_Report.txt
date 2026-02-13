@@ -1,0 +1,27 @@
+Phase 4 Report:
+- New modules:
+  - Include\Advanced\AdvancedTradeManager.mqh
+  - Include\Advanced\ExternalDataModule.mqh
+  - Include\Advanced\Dashboard.mqh
+  - Include\Advanced\Logger.mqh
+  - Include\Utils\CSVReader.mqh
+- Updated modules:
+  - Include\Core\ScoreCalculator.mqh (fundamental score channel)
+  - XAUUSD_EA.mq5 (advanced management, panel, logger, external data, timer/chart events)
+
+Key Notes:
+1. Pattern scan range is configurable in inputs:
+   - PatternScanBars
+   - ChartPatternLookbackBars
+2. Level clutter is controlled by:
+   - MaxLevelsToDraw
+   - MinTouchCount
+3. Dashboard supports:
+   - Auto Trade ON/OFF button
+   - Close All button
+4. Logger writes daily files into Data\logs\ under FILE_COMMON mode.
+
+Testing Notes:
+- Put CSV files in Common\Files\Data\
+- Check panel button clicks in visual tester.
+- Check logs for Persian entries and fundamental blocking state.
