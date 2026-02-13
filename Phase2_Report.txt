@@ -1,0 +1,19 @@
+Phase 2 Report:
+- New modules:
+  - Include\Levels\LevelDetector.mqh
+  - Include\Levels\ZoneManager.mqh
+- Updated modules:
+  - Include\Core\ScoreCalculator.mqh (level bias integration)
+  - Include\Core\RiskManager.mqh (dynamic ATR/level-based SL/TP)
+  - Include\Utils\Helpers.mqh (robust semicolon parsing from previous fix)
+  - XAUUSD_EA.mq5 (phase 2 includes, inputs, orchestration)
+
+Placement Guide:
+1. Copy the whole XAUUSD_EA folder into: <MT5 Data Folder>\MQL5\Experts\
+2. Keep folder structure exactly as provided.
+3. Compile XAUUSD_EA.mq5 in MetaEditor.
+
+Testing Notes:
+- Enable chart objects in Strategy Tester visual mode to see support/resistance lines.
+- Check logs for: score values, level score, support/resistance used for decisions.
+- Compare behavior with UseATRforSL true/false.

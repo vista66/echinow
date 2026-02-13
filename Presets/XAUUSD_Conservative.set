@@ -1,0 +1,17 @@
+; XAUUSD_EA Conservative
+RiskPercent=0.7
+Threshold=6.0
+LevelWeight=2.0
+PatternWeight=1.5
+ChartPatternWeight=2.0
+FundamentalWeight=6.0
+UseBreakEven=true
+BreakEvenTrigger=35
+UseTrailing=true
+TrailingTrigger=45
+TrailingStep=30
+UseEarlyExit=true
+EarlyExitScoreDrop=4.0
+PatternScanBars=6
+ChartPatternLookbackBars=40
+MaxLevelsToDraw=8
