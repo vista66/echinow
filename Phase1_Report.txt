@@ -1,0 +1,20 @@
+Phase 1 Report:
+- New modules:
+  - Include\Core\MTFAnalyzer.mqh
+  - Include\Core\ScoreCalculator.mqh
+  - Include\Core\RiskManager.mqh
+  - Include\Core\TradeExecutor.mqh
+  - Include\Utils\Helpers.mqh
+- Main file updated:
+  - XAUUSD_EA.mq5 now includes phase 1 modules and phase 1 inputs.
+  - OnTick executes MTF update, weighted scoring, risk-based lot sizing, and order execution.
+
+Placement Guide:
+1. Copy folder XAUUSD_EA into: <MT5 Data Folder>\MQL5\Experts\
+2. Ensure all include files keep the same subfolder structure.
+3. Attach XAUUSD_EA.mq5 to XAUUSD chart in MT5 Strategy Tester.
+
+Testing Notes:
+- Verify Timeframes and Weights lists have same item count.
+- Check Experts tab for score logs and trade decision reasons.
+- If AutoTrading is false, EA will log and skip entries.
