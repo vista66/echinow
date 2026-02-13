@@ -33,8 +33,10 @@ input bool           AutoTrading  = true;
 // === Level Detection ===
 input int            SwingStrength = 3;
 input int            MinPipsBetweenLevels = 50;
+input int            LevelLookbackBars = 250;
 input int            MinTouchCount = 2;
 input double         LevelWeight = 2.0;
+input int            MaxLevelsToDraw = 12;
 
 // === Dynamic SL/TP ===
 input bool           UseATRforSL = true;
@@ -48,6 +50,7 @@ input bool           EnableDoji = true;
 input bool           EnableTweezer = true;
 input double         PatternWeight = 3.0;
 input int            MaxPatternDistanceFromLevel = 5;
+input int            PatternScanBars = 8;
 
 // === Chart Patterns ===
 input bool           EnableTriangle = true;
@@ -85,7 +88,7 @@ int OnInit()
       return INIT_FAILED;
    if(!Zones.Initialize(_Symbol, "XAU_Level_"))
       return INIT_FAILED;
-   if(!Levels.Initialize(_Symbol, PERIOD_H1, SwingStrength, 300, (double)MinPipsBetweenLevels, Zones))
+   if(!Levels.Initialize(_Symbol, PERIOD_H1, SwingStrength, LevelLookbackBars, (double)MinPipsBetweenLevels, Zones))
       return INIT_FAILED;
    if(!Patterns.Initialize(_Symbol,
                            PERIOD_H1,
@@ -94,7 +97,8 @@ int OnInit()
                            EnableDoji,
                            EnableTweezer,
                            PatternWeight,
-                           (double)MaxPatternDistanceFromLevel))
+                           (double)MaxPatternDistanceFromLevel,
+                           PatternScanBars))
       return INIT_FAILED;
    if(!ChartPatterns.Initialize(_Symbol,
                                 PERIOD_H1,
@@ -102,7 +106,8 @@ int OnInit()
                                 EnableChannel,
                                 EnableRectangle,
                                 ChartPatternWeight,
-                                30))
+                                30,
+                                "XAU_ChartPattern_"))
       return INIT_FAILED;
 
    return(INIT_SUCCEEDED);
@@ -118,19 +123,21 @@ void OnTick()
    const double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    const double nearestSupport = Zones.GetNearestSupport(currentPrice, MinTouchCount);
    const double nearestResistance = Zones.GetNearestResistance(currentPrice, MinTouchCount);
+   const double patternSupport = Zones.GetNearestSupport(currentPrice, 1);
+   const double patternResistance = Zones.GetNearestResistance(currentPrice, 1);
 
    if(!Scorer.Update())
       return;
 
    Scorer.ApplyLevelBias(currentPrice, nearestSupport, nearestResistance, LevelWeight);
 
-   const double patternScore = Patterns.Update(nearestSupport, nearestResistance);
+   const double patternScore = Patterns.Update(patternSupport, patternResistance);
    Scorer.ApplyPatternScore(patternScore);
 
    const double chartPatternScore = ChartPatterns.Update();
    Scorer.ApplyChartPatternScore(chartPatternScore);
 
-   Zones.Draw(MinTouchCount, clrLime, clrTomato);
+   Zones.DrawFiltered(currentPrice, MinTouchCount, MaxLevelsToDraw, clrLime, clrTomato);
 
    Print(Scorer.BuildScoreLog(),
          " | LevelScore=", DoubleToString(Scorer.GetLevelScore(), 2),

@@ -22,3 +22,10 @@ Testing Notes:
 - Toggle each pattern input ON/OFF and verify logs change.
 - Confirm near-level filtering by changing MaxPatternDistanceFromLevel.
 - Check Experts log for PA/CP pattern names in score/open messages.
+
+Hotfix Notes (pattern visibility & level clutter):
+- Level drawing now limits visible S/R lines to nearest MaxLevelsToDraw items (with min touches filter).
+- Old S/R objects are removed before redraw to prevent line accumulation on chart.
+- Price-action detection now scans recent bars (PatternScanBars) instead of only 1 bar.
+- Pattern proximity uses nearest levels with touch>=1 for detection sensitivity.
+- Chart pattern breakout logic excludes the breakout candle from range calculation and shows a chart label status.

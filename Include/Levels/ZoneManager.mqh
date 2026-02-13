@@ -4,7 +4,7 @@
 //| ZoneManager.mqh                                                  |
 //| Manages support/resistance levels and chart drawing.             |
 //| Dependencies: Include\Utils\Helpers.mqh                          |
-//| Created: 2026-01-01 | Version: 1.00                              |
+//| Created: 2026-01-01 | Version: 1.10                              |
 //+------------------------------------------------------------------+
 #include "..\Utils\Helpers.mqh"
 
@@ -17,6 +17,17 @@ private:
    int      m_touches[];
    bool     m_isSupport[];
 
+   void DeleteDrawnObjects() const
+   {
+      const int total = ObjectsTotal(0, 0, -1);
+      for(int i = total - 1; i >= 0; i--)
+      {
+         const string name = ObjectName(0, i, 0, -1);
+         if(StringFind(name, m_prefix) == 0)
+            ObjectDelete(0, name);
+      }
+   }
+
 public:
    CZoneManager()
    {
@@ -24,7 +35,10 @@ public:
       m_prefix = "XAU_Level_";
    }
 
-   ~CZoneManager() {}
+   ~CZoneManager()
+   {
+      DeleteDrawnObjects();
+   }
 
    bool Initialize(const string symbol, const string objectPrefix)
    {
@@ -118,18 +132,62 @@ public:
       return best;
    }
 
-   void Draw(const int minTouches, const color supportColor, const color resistanceColor) const
+   void DrawFiltered(const double currentPrice,
+                     const int minTouches,
+                     const int maxLevelsToDraw,
+                     const color supportColor,
+                     const color resistanceColor)
    {
-      for(int i = 0; i < ArraySize(m_levels); i++)
-      {
-         const string name = m_prefix + IntegerToString(i);
-         if(ObjectFind(0, name) < 0)
-            ObjectCreate(0, name, OBJ_HLINE, 0, 0, m_levels[i]);
+      DeleteDrawnObjects();
 
+      int selected[];
+      double distances[];
+      const int totalLevels = ArraySize(m_levels);
+      const int maxLevels = MathMax(maxLevelsToDraw, 1);
+
+      for(int i = 0; i < totalLevels; i++)
+      {
+         if(m_touches[i] < minTouches)
+            continue;
+
+         const int n = ArraySize(selected);
+         ArrayResize(selected, n + 1);
+         ArrayResize(distances, n + 1);
+         selected[n] = i;
+         distances[n] = MathAbs(m_levels[i] - currentPrice);
+      }
+
+      // Sort by distance to current price (nearest first)
+      for(int i = 0; i < ArraySize(selected); i++)
+      {
+         int best = i;
+         for(int j = i + 1; j < ArraySize(selected); j++)
+         {
+            if(distances[j] < distances[best])
+               best = j;
+         }
+         if(best != i)
+         {
+            const int tmpIdx = selected[i];
+            selected[i] = selected[best];
+            selected[best] = tmpIdx;
+
+            const double tmpDist = distances[i];
+            distances[i] = distances[best];
+            distances[best] = tmpDist;
+         }
+      }
+
+      const int drawCount = MathMin(ArraySize(selected), maxLevels);
+      for(int k = 0; k < drawCount; k++)
+      {
+         const int i = selected[k];
+         const string name = m_prefix + IntegerToString(k);
+         ObjectCreate(0, name, OBJ_HLINE, 0, 0, m_levels[i]);
          ObjectSetDouble(0, name, OBJPROP_PRICE, m_levels[i]);
          ObjectSetInteger(0, name, OBJPROP_COLOR, m_isSupport[i] ? supportColor : resistanceColor);
-         ObjectSetInteger(0, name, OBJPROP_STYLE, m_touches[i] >= minTouches ? STYLE_SOLID : STYLE_DOT);
-         ObjectSetInteger(0, name, OBJPROP_WIDTH, m_touches[i] >= minTouches ? 2 : 1);
+         ObjectSetInteger(0, name, OBJPROP_STYLE, STYLE_SOLID);
+         ObjectSetInteger(0, name, OBJPROP_WIDTH, 2);
       }
    }
 };

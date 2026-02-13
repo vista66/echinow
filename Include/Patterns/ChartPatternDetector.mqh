@@ -4,7 +4,7 @@
 //| ChartPatternDetector.mqh                                         |
 //| Detects simple triangle/channel/rectangle breakout conditions.   |
 //| Dependencies: none                                                |
-//| Created: 2026-01-01 | Version: 1.00                              |
+//| Created: 2026-01-01 | Version: 1.10                              |
 //+------------------------------------------------------------------+
 
 class CChartPatternDetector
@@ -18,6 +18,7 @@ private:
    double            m_weight;
    int               m_lookbackBars;
    string            m_lastPattern;
+   string            m_objectPrefix;
 
    double Highest(const int fromShift, const int count) const
    {
@@ -54,9 +55,13 @@ public:
       m_weight = 4.0;
       m_lookbackBars = 30;
       m_lastPattern = "None";
+      m_objectPrefix = "XAU_ChartPattern_";
    }
 
-   ~CChartPatternDetector() {}
+   ~CChartPatternDetector()
+   {
+      ObjectDelete(0, m_objectPrefix + "Label");
+   }
 
    bool Initialize(const string symbol,
                    const ENUM_TIMEFRAMES tf,
@@ -64,7 +69,8 @@ public:
                    const bool enableChannel,
                    const bool enableRectangle,
                    const double weight,
-                   const int lookbackBars)
+                   const int lookbackBars,
+                   const string objectPrefix)
    {
       m_symbol = symbol;
       m_tf = tf;
@@ -73,6 +79,7 @@ public:
       m_enableRectangle = enableRectangle;
       m_weight = weight;
       m_lookbackBars = lookbackBars;
+      m_objectPrefix = objectPrefix;
       return true;
    }
 
@@ -82,12 +89,16 @@ public:
       m_lastPattern = "None";
       const int bars = Bars(m_symbol, m_tf);
       if(bars <= m_lookbackBars + 3)
+      {
+         DrawStatus();
          return 0.0;
+      }
 
-      const double highNow = Highest(1, m_lookbackBars / 2);
-      const double highPrev = Highest(1 + m_lookbackBars / 2, m_lookbackBars / 2);
-      const double lowNow = Lowest(1, m_lookbackBars / 2);
-      const double lowPrev = Lowest(1 + m_lookbackBars / 2, m_lookbackBars / 2);
+      const int half = MathMax(m_lookbackBars / 2, 2);
+      const double highNow = Highest(2, half);
+      const double highPrev = Highest(2 + half, half);
+      const double lowNow = Lowest(2, half);
+      const double lowPrev = Lowest(2 + half, half);
       const double closePrice = iClose(m_symbol, m_tf, 1);
       const double point = SymbolInfoDouble(m_symbol, SYMBOL_POINT);
 
@@ -97,11 +108,13 @@ public:
          if(converging && closePrice > highNow + point)
          {
             m_lastPattern = "Triangle Breakout Up";
+            DrawStatus();
             return m_weight;
          }
          if(converging && closePrice < lowNow - point)
          {
             m_lastPattern = "Triangle Breakout Down";
+            DrawStatus();
             return -m_weight;
          }
       }
@@ -113,32 +126,54 @@ public:
          if(risingChannel && closePrice > highNow + point)
          {
             m_lastPattern = "Channel Breakout Up";
+            DrawStatus();
             return m_weight;
          }
          if(fallingChannel && closePrice < lowNow - point)
          {
             m_lastPattern = "Channel Breakout Down";
+            DrawStatus();
             return -m_weight;
          }
       }
 
       if(m_enableRectangle)
       {
-         const double top = Highest(1, m_lookbackBars);
-         const double bottom = Lowest(1, m_lookbackBars);
+         const double top = Highest(2, m_lookbackBars);
+         const double bottom = Lowest(2, m_lookbackBars);
          if(closePrice > top + point)
          {
             m_lastPattern = "Rectangle Breakout Up";
+            DrawStatus();
             return m_weight;
          }
          if(closePrice < bottom - point)
          {
             m_lastPattern = "Rectangle Breakout Down";
+            DrawStatus();
             return -m_weight;
          }
       }
 
+      DrawStatus();
       return 0.0;
+   }
+
+   void DrawStatus() const
+   {
+      const string name = m_objectPrefix + "Label";
+      if(ObjectFind(0, name) < 0)
+      {
+         ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
+         ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_RIGHT_UPPER);
+         ObjectSetInteger(0, name, OBJPROP_XDISTANCE, 20);
+         ObjectSetInteger(0, name, OBJPROP_YDISTANCE, 20);
+         ObjectSetInteger(0, name, OBJPROP_FONTSIZE, 10);
+      }
+
+      const color c = (m_lastPattern == "None") ? clrSilver : clrGold;
+      ObjectSetInteger(0, name, OBJPROP_COLOR, c);
+      ObjectSetString(0, name, OBJPROP_TEXT, "ChartPattern: " + m_lastPattern);
    }
 
    string GetLastPattern() const { return m_lastPattern; }
