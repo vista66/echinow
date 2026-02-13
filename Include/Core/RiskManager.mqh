@@ -88,6 +88,67 @@ public:
 
       return false;
    }
+
+   // Builds dynamic stops using ATR and nearest support/resistance levels.
+   bool BuildDynamicStops(const int direction,
+                          const double fixedSLPips,
+                          const double fixedTPPips,
+                          const bool useATRforSL,
+                          const int atrPeriod,
+                          const double atrExtraMultiplier,
+                          const double nearestSupport,
+                          const double nearestResistance,
+                          double &slPrice,
+                          double &tpPrice) const
+   {
+      const double ask = SymbolInfoDouble(m_symbol, SYMBOL_ASK);
+      const double bid = SymbolInfoDouble(m_symbol, SYMBOL_BID);
+      const int digits = (int)SymbolInfoInteger(m_symbol, SYMBOL_DIGITS);
+
+      double slDistance = XAUHelpers::PipsToPrice(m_symbol, fixedSLPips);
+      const double fixedTPDistance = XAUHelpers::PipsToPrice(m_symbol, fixedTPPips);
+
+      if(useATRforSL)
+      {
+         const int atrHandle = iATR(m_symbol, PERIOD_CURRENT, atrPeriod);
+         if(atrHandle != INVALID_HANDLE)
+         {
+            double atrBuff[];
+            ArraySetAsSeries(atrBuff, true);
+            if(CopyBuffer(atrHandle, 0, 0, 1, atrBuff) > 0 && atrBuff[0] > 0.0)
+               slDistance = atrBuff[0] * atrExtraMultiplier;
+            IndicatorRelease(atrHandle);
+         }
+      }
+
+      if(direction > 0)
+      {
+         const double baseEntry = ask;
+         const double levelSL = nearestSupport > 0.0 ? nearestSupport : (baseEntry - slDistance);
+         slPrice = NormalizeDouble(MathMin(baseEntry - SymbolInfoDouble(m_symbol, SYMBOL_POINT), levelSL), digits);
+
+         if(nearestResistance > baseEntry)
+            tpPrice = NormalizeDouble(nearestResistance, digits);
+         else
+            tpPrice = NormalizeDouble(baseEntry + fixedTPDistance, digits);
+         return true;
+      }
+
+      if(direction < 0)
+      {
+         const double baseEntry = bid;
+         const double levelSL = nearestResistance > 0.0 ? nearestResistance : (baseEntry + slDistance);
+         slPrice = NormalizeDouble(MathMax(baseEntry + SymbolInfoDouble(m_symbol, SYMBOL_POINT), levelSL), digits);
+
+         if(nearestSupport > 0.0 && nearestSupport < baseEntry)
+            tpPrice = NormalizeDouble(nearestSupport, digits);
+         else
+            tpPrice = NormalizeDouble(baseEntry - fixedTPDistance, digits);
+         return true;
+      }
+
+      return false;
+   }
 };
 
 #endif

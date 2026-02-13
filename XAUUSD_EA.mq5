@@ -3,13 +3,15 @@
 //|                                      (c) Copyright 2026, AI-gen  |
 //+------------------------------------------------------------------+
 #property copyright "AI-generated EA for XAUUSD"
-#property version   "1.00"
+#property version   "1.10"
 #property strict
 
 #include "Include\Core\MTFAnalyzer.mqh"
 #include "Include\Core\ScoreCalculator.mqh"
 #include "Include\Core\RiskManager.mqh"
 #include "Include\Core\TradeExecutor.mqh"
+#include "Include\Levels\LevelDetector.mqh"
+#include "Include\Levels\ZoneManager.mqh"
 
 // === MTF Settings ===
 input string         Timeframes   = "M1;M5;M15;H1;H4;D1;W1";
@@ -26,10 +28,23 @@ input int            FixedTP      = 400;
 // === Trade Settings ===
 input bool           AutoTrading  = true;
 
+// === Level Detection ===
+input int            SwingStrength = 3;
+input int            MinPipsBetweenLevels = 50;
+input int            MinTouchCount = 2;
+input double         LevelWeight = 2.0;
+
+// === Dynamic SL/TP ===
+input bool           UseATRforSL = true;
+input int            ATRPeriod = 14;
+input double         ATRExtraMultiplier = 1.5;
+
 CMTFAnalyzer      *MTF;
 CScoreCalculator  *Scorer;
 CRiskManager      *Risk;
 CTradeExecutor    *Trader;
+CZoneManager      *Zones;
+CLevelDetector    *Levels;
 
 int OnInit()
 {
@@ -37,6 +52,8 @@ int OnInit()
    Scorer = new CScoreCalculator();
    Risk = new CRiskManager();
    Trader = new CTradeExecutor();
+   Zones = new CZoneManager();
+   Levels = new CLevelDetector();
 
    if(!MTF.Initialize(_Symbol, Timeframes, IndicatorType, MAPeriod))
       return INIT_FAILED;
@@ -46,6 +63,10 @@ int OnInit()
       return INIT_FAILED;
    if(!Trader.Initialize(_Symbol))
       return INIT_FAILED;
+   if(!Zones.Initialize(_Symbol, "XAU_Level_"))
+      return INIT_FAILED;
+   if(!Levels.Initialize(_Symbol, PERIOD_H1, SwingStrength, 300, (double)MinPipsBetweenLevels, Zones))
+      return INIT_FAILED;
 
    return(INIT_SUCCEEDED);
 }
@@ -54,10 +75,20 @@ void OnTick()
 {
    if(!MTF.Update())
       return;
+   if(!Levels.Update())
+      return;
+
+   const double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   const double nearestSupport = Zones.GetNearestSupport(currentPrice, MinTouchCount);
+   const double nearestResistance = Zones.GetNearestResistance(currentPrice, MinTouchCount);
+
    if(!Scorer.Update())
       return;
 
-   Print(Scorer.BuildScoreLog());
+   Scorer.ApplyLevelBias(currentPrice, nearestSupport, nearestResistance, LevelWeight);
+   Zones.Draw(MinTouchCount, clrLime, clrTomato);
+
+   Print(Scorer.BuildScoreLog(), " | LevelScore=", DoubleToString(Scorer.GetLevelScore(), 2));
 
    if(!AutoTrading)
    {
@@ -81,14 +112,25 @@ void OnTick()
    const double lot = Risk.CalculateLot(RiskPercent, (double)FixedSL);
    double slPrice = 0.0;
    double tpPrice = 0.0;
-   if(lot <= 0.0 || !Risk.BuildStops(direction, (double)FixedSL, (double)FixedTP, slPrice, tpPrice))
+
+   if(lot <= 0.0 || !Risk.BuildDynamicStops(direction,
+                                             (double)FixedSL,
+                                             (double)FixedTP,
+                                             UseATRforSL,
+                                             ATRPeriod,
+                                             ATRExtraMultiplier,
+                                             nearestSupport,
+                                             nearestResistance,
+                                             slPrice,
+                                             tpPrice))
    {
-      Print("Trade skipped: invalid lot or SL/TP calculation.");
+      Print("Trade skipped: invalid lot or dynamic SL/TP calculation.");
       return;
    }
 
    if(Trader.Open(direction, lot, slPrice, tpPrice))
-      Print("Trade opened. Dir=", direction, " Lot=", DoubleToString(lot, 2), " SL=", slPrice, " TP=", tpPrice);
+      Print("Trade opened. Dir=", direction, " Lot=", DoubleToString(lot, 2), " SL=", slPrice, " TP=", tpPrice,
+            " Support=", nearestSupport, " Resistance=", nearestResistance);
 }
 
 void OnTimer()
@@ -105,5 +147,7 @@ void OnDeinit(const int reason)
    delete Scorer;
    delete Risk;
    delete Trader;
+   delete Zones;
+   delete Levels;
 }
 //+------------------------------------------------------------------+

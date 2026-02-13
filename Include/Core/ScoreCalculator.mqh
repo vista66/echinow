@@ -15,6 +15,7 @@ private:
    CMTFAnalyzer      *m_analyzer;
    double            m_threshold;
    double            m_globalScore;
+   double            m_levelScore;
    int               m_direction;
    double            m_weights[];
    int               m_inputWeightCount;
@@ -26,6 +27,7 @@ public:
       m_analyzer = NULL;
       m_threshold = 0.0;
       m_globalScore = 0.0;
+      m_levelScore = 0.0;
       m_direction = 0;
       m_inputWeightCount = 0;
       m_defaultWeight = 1.0;
@@ -78,6 +80,7 @@ public:
       }
 
       m_globalScore = 0.0;
+      m_levelScore = 0.0;
       for(int i = 0; i < analyzerCount; i++)
       {
          double weight = m_defaultWeight;
@@ -97,10 +100,34 @@ public:
       return true;
    }
 
+   // Applies level-based bias to final score.
+   void ApplyLevelBias(const double currentPrice,
+                       const double nearestSupport,
+                       const double nearestResistance,
+                       const double levelWeight)
+   {
+      m_levelScore = 0.0;
+      if(levelWeight <= 0.0)
+         return;
+
+      if(nearestSupport > 0.0 && nearestResistance > 0.0)
+      {
+         const double distanceToSupport = MathAbs(currentPrice - nearestSupport);
+         const double distanceToResistance = MathAbs(nearestResistance - currentPrice);
+         if(distanceToSupport < distanceToResistance)
+            m_levelScore = levelWeight;
+         else if(distanceToResistance < distanceToSupport)
+            m_levelScore = -levelWeight;
+      }
+
+      m_globalScore += m_levelScore;
+   }
+
    // Returns true if signal is strong enough for a new trade.
    bool ShouldOpenTrade() const { return m_direction != 0; }
    int GetDirection() const { return m_direction; }
    double GetGlobalScore() const { return m_globalScore; }
+   double GetLevelScore() const { return m_levelScore; }
 
    // Human-readable diagnostic string for Expert log.
    string BuildScoreLog() const
