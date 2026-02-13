@@ -4,7 +4,7 @@
 //| ScoreCalculator.mqh                                              |
 //| Weighted score aggregation and entry decision helper.            |
 //| Dependencies: Include\Core\MTFAnalyzer.mqh, Include\Utils\Helpers|
-//| Created: 2026-01-01 | Version: 1.00                              |
+//| Created: 2026-01-01 | Version: 1.10                              |
 //+------------------------------------------------------------------+
 #include "MTFAnalyzer.mqh"
 #include "..\Utils\Helpers.mqh"
@@ -16,10 +16,22 @@ private:
    double            m_threshold;
    double            m_globalScore;
    double            m_levelScore;
+   double            m_patternScore;
+   double            m_chartPatternScore;
    int               m_direction;
    double            m_weights[];
    int               m_inputWeightCount;
    double            m_defaultWeight;
+
+   void RecalculateDirection()
+   {
+      if(m_globalScore > m_threshold)
+         m_direction = 1;
+      else if(m_globalScore < (-m_threshold))
+         m_direction = -1;
+      else
+         m_direction = 0;
+   }
 
 public:
    CScoreCalculator()
@@ -28,6 +40,8 @@ public:
       m_threshold = 0.0;
       m_globalScore = 0.0;
       m_levelScore = 0.0;
+      m_patternScore = 0.0;
+      m_chartPatternScore = 0.0;
       m_direction = 0;
       m_inputWeightCount = 0;
       m_defaultWeight = 1.0;
@@ -81,6 +95,9 @@ public:
 
       m_globalScore = 0.0;
       m_levelScore = 0.0;
+      m_patternScore = 0.0;
+      m_chartPatternScore = 0.0;
+
       for(int i = 0; i < analyzerCount; i++)
       {
          double weight = m_defaultWeight;
@@ -90,13 +107,7 @@ public:
          m_globalScore += (double)m_analyzer.GetScore(i) * weight;
       }
 
-      if(m_globalScore > m_threshold)
-         m_direction = 1;
-      else if(m_globalScore < (-m_threshold))
-         m_direction = -1;
-      else
-         m_direction = 0;
-
+      RecalculateDirection();
       return true;
    }
 
@@ -121,13 +132,31 @@ public:
       }
 
       m_globalScore += m_levelScore;
+      RecalculateDirection();
    }
 
-   // Returns true if signal is strong enough for a new trade.
+   // Applies price-action pattern contribution.
+   void ApplyPatternScore(const double score)
+   {
+      m_patternScore = score;
+      m_globalScore += m_patternScore;
+      RecalculateDirection();
+   }
+
+   // Applies chart-pattern contribution.
+   void ApplyChartPatternScore(const double score)
+   {
+      m_chartPatternScore = score;
+      m_globalScore += m_chartPatternScore;
+      RecalculateDirection();
+   }
+
    bool ShouldOpenTrade() const { return m_direction != 0; }
    int GetDirection() const { return m_direction; }
    double GetGlobalScore() const { return m_globalScore; }
    double GetLevelScore() const { return m_levelScore; }
+   double GetPatternScore() const { return m_patternScore; }
+   double GetChartPatternScore() const { return m_chartPatternScore; }
 
    // Human-readable diagnostic string for Expert log.
    string BuildScoreLog() const

@@ -1,0 +1,24 @@
+Phase 3 Report:
+- New modules:
+  - Include\Patterns\PatternDetector.mqh
+  - Include\Patterns\ChartPatternDetector.mqh
+- Updated modules:
+  - Include\Core\ScoreCalculator.mqh (pattern & chart-pattern score channels)
+  - XAUUSD_EA.mq5 (phase 3 includes, inputs, pattern flow)
+
+What was added:
+1. Price Action Pattern detection (Engulfing, PinBar, Doji, Tweezer)
+   - Score is applied only when pattern is close enough to nearest level.
+2. Chart Pattern detection (Triangle, Channel, Rectangle)
+   - Score is applied on simple breakout heuristics.
+3. Score engine now re-evaluates trade direction after each extra score layer.
+
+Placement Guide:
+1. Copy the whole XAUUSD_EA folder into: <MT5 Data Folder>\MQL5\Experts\
+2. Keep folder structure exactly as provided.
+3. Compile XAUUSD_EA.mq5 in MetaEditor.
+
+Testing Notes:
+- Toggle each pattern input ON/OFF and verify logs change.
+- Confirm near-level filtering by changing MaxPatternDistanceFromLevel.
+- Check Experts log for PA/CP pattern names in score/open messages.

@@ -3,7 +3,7 @@
 //|                                      (c) Copyright 2026, AI-gen  |
 //+------------------------------------------------------------------+
 #property copyright "AI-generated EA for XAUUSD"
-#property version   "1.10"
+#property version   "1.20"
 #property strict
 
 #include "Include\Core\MTFAnalyzer.mqh"
@@ -12,6 +12,8 @@
 #include "Include\Core\TradeExecutor.mqh"
 #include "Include\Levels\LevelDetector.mqh"
 #include "Include\Levels\ZoneManager.mqh"
+#include "Include\Patterns\PatternDetector.mqh"
+#include "Include\Patterns\ChartPatternDetector.mqh"
 
 // === MTF Settings ===
 input string         Timeframes   = "M1;M5;M15;H1;H4;D1;W1";
@@ -39,12 +41,28 @@ input bool           UseATRforSL = true;
 input int            ATRPeriod = 14;
 input double         ATRExtraMultiplier = 1.5;
 
-CMTFAnalyzer      *MTF;
-CScoreCalculator  *Scorer;
-CRiskManager      *Risk;
-CTradeExecutor    *Trader;
-CZoneManager      *Zones;
-CLevelDetector    *Levels;
+// === Price Action Patterns ===
+input bool           EnableEngulfing = true;
+input bool           EnablePinBar = true;
+input bool           EnableDoji = true;
+input bool           EnableTweezer = true;
+input double         PatternWeight = 3.0;
+input int            MaxPatternDistanceFromLevel = 5;
+
+// === Chart Patterns ===
+input bool           EnableTriangle = true;
+input bool           EnableChannel = true;
+input bool           EnableRectangle = true;
+input double         ChartPatternWeight = 4.0;
+
+CMTFAnalyzer           *MTF;
+CScoreCalculator       *Scorer;
+CRiskManager           *Risk;
+CTradeExecutor         *Trader;
+CZoneManager           *Zones;
+CLevelDetector         *Levels;
+CPatternDetector       *Patterns;
+CChartPatternDetector  *ChartPatterns;
 
 int OnInit()
 {
@@ -54,6 +72,8 @@ int OnInit()
    Trader = new CTradeExecutor();
    Zones = new CZoneManager();
    Levels = new CLevelDetector();
+   Patterns = new CPatternDetector();
+   ChartPatterns = new CChartPatternDetector();
 
    if(!MTF.Initialize(_Symbol, Timeframes, IndicatorType, MAPeriod))
       return INIT_FAILED;
@@ -66,6 +86,23 @@ int OnInit()
    if(!Zones.Initialize(_Symbol, "XAU_Level_"))
       return INIT_FAILED;
    if(!Levels.Initialize(_Symbol, PERIOD_H1, SwingStrength, 300, (double)MinPipsBetweenLevels, Zones))
+      return INIT_FAILED;
+   if(!Patterns.Initialize(_Symbol,
+                           PERIOD_H1,
+                           EnableEngulfing,
+                           EnablePinBar,
+                           EnableDoji,
+                           EnableTweezer,
+                           PatternWeight,
+                           (double)MaxPatternDistanceFromLevel))
+      return INIT_FAILED;
+   if(!ChartPatterns.Initialize(_Symbol,
+                                PERIOD_H1,
+                                EnableTriangle,
+                                EnableChannel,
+                                EnableRectangle,
+                                ChartPatternWeight,
+                                30))
       return INIT_FAILED;
 
    return(INIT_SUCCEEDED);
@@ -86,9 +123,21 @@ void OnTick()
       return;
 
    Scorer.ApplyLevelBias(currentPrice, nearestSupport, nearestResistance, LevelWeight);
+
+   const double patternScore = Patterns.Update(nearestSupport, nearestResistance);
+   Scorer.ApplyPatternScore(patternScore);
+
+   const double chartPatternScore = ChartPatterns.Update();
+   Scorer.ApplyChartPatternScore(chartPatternScore);
+
    Zones.Draw(MinTouchCount, clrLime, clrTomato);
 
-   Print(Scorer.BuildScoreLog(), " | LevelScore=", DoubleToString(Scorer.GetLevelScore(), 2));
+   Print(Scorer.BuildScoreLog(),
+         " | LevelScore=", DoubleToString(Scorer.GetLevelScore(), 2),
+         " | PatternScore=", DoubleToString(Scorer.GetPatternScore(), 2),
+         " | ChartPatternScore=", DoubleToString(Scorer.GetChartPatternScore(), 2),
+         " | PA=", Patterns.GetLastPattern(),
+         " | CP=", ChartPatterns.GetLastPattern());
 
    if(!AutoTrading)
    {
@@ -129,8 +178,14 @@ void OnTick()
    }
 
    if(Trader.Open(direction, lot, slPrice, tpPrice))
-      Print("Trade opened. Dir=", direction, " Lot=", DoubleToString(lot, 2), " SL=", slPrice, " TP=", tpPrice,
-            " Support=", nearestSupport, " Resistance=", nearestResistance);
+      Print("Trade opened. Dir=", direction,
+            " Lot=", DoubleToString(lot, 2),
+            " SL=", slPrice,
+            " TP=", tpPrice,
+            " Support=", nearestSupport,
+            " Resistance=", nearestResistance,
+            " PA=", Patterns.GetLastPattern(),
+            " CP=", ChartPatterns.GetLastPattern());
 }
 
 void OnTimer()
@@ -149,5 +204,7 @@ void OnDeinit(const int reason)
    delete Trader;
    delete Zones;
    delete Levels;
+   delete Patterns;
+   delete ChartPatterns;
 }
 //+------------------------------------------------------------------+
