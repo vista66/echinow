@@ -14,7 +14,25 @@ namespace XAUHelpers
    {
       string normalized = source;
       StringReplace(normalized, " ", "");
-      return StringSplit(normalized, ';', result);
+      string raw[];
+      const int rawCount = StringSplit(normalized, ';', raw);
+      ArrayResize(result, 0);
+
+      if(rawCount <= 0)
+         return 0;
+
+      int validCount = 0;
+      for(int i = 0; i < rawCount; i++)
+      {
+         if(StringLen(raw[i]) == 0)
+            continue;
+
+         ArrayResize(result, validCount + 1);
+         result[validCount] = raw[i];
+         validCount++;
+      }
+
+      return validCount;
    }
 
    // Converts timeframe text (M1, M5, H1, D1...) into ENUM_TIMEFRAMES.

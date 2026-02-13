@@ -17,7 +17,8 @@ private:
    double            m_globalScore;
    int               m_direction;
    double            m_weights[];
-   int               m_count;
+   int               m_inputWeightCount;
+   double            m_defaultWeight;
 
 public:
    CScoreCalculator()
@@ -26,7 +27,8 @@ public:
       m_threshold = 0.0;
       m_globalScore = 0.0;
       m_direction = 0;
-      m_count = 0;
+      m_inputWeightCount = 0;
+      m_defaultWeight = 1.0;
    }
 
    ~CScoreCalculator() {}
@@ -38,18 +40,23 @@ public:
       m_threshold = threshold;
 
       string tokens[];
-      m_count = XAUHelpers::SplitSemicolon(weightList, tokens);
-      if(m_count <= 0)
+      m_inputWeightCount = XAUHelpers::SplitSemicolon(weightList, tokens);
+      if(m_inputWeightCount <= 0)
       {
          Print("CScoreCalculator.Initialize: invalid weight list");
          return false;
       }
 
-      ArrayResize(m_weights, m_count);
-      for(int i = 0; i < m_count; i++)
+      ArrayResize(m_weights, m_inputWeightCount);
+      for(int i = 0; i < m_inputWeightCount; i++)
       {
          m_weights[i] = StringToDouble(tokens[i]);
       }
+
+      m_defaultWeight = m_weights[m_inputWeightCount - 1];
+      if(m_defaultWeight <= 0.0)
+         m_defaultWeight = 1.0;
+
       return true;
    }
 
@@ -63,16 +70,21 @@ public:
       if(analyzerCount <= 0)
          return false;
 
-      if(analyzerCount != m_count)
+      if(m_inputWeightCount != analyzerCount)
       {
-         Print("CScoreCalculator.Update: weights/timeframes size mismatch");
-         return false;
+         Print("CScoreCalculator.Update: weights/timeframes size mismatch. Weights=", m_inputWeightCount,
+               " Timeframes=", analyzerCount,
+               " (fallback weight applied).");
       }
 
       m_globalScore = 0.0;
       for(int i = 0; i < analyzerCount; i++)
       {
-         m_globalScore += (double)m_analyzer.GetScore(i) * m_weights[i];
+         double weight = m_defaultWeight;
+         if(i < m_inputWeightCount && m_weights[i] > 0.0)
+            weight = m_weights[i];
+
+         m_globalScore += (double)m_analyzer.GetScore(i) * weight;
       }
 
       if(m_globalScore > m_threshold)
