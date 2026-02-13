@@ -1,0 +1,17 @@
+; XAUUSD_EA Aggressive
+RiskPercent=2.5
+Threshold=2.5
+LevelWeight=3.5
+PatternWeight=4.5
+ChartPatternWeight=5.5
+FundamentalWeight=3.0
+UseBreakEven=true
+BreakEvenTrigger=60
+UseTrailing=true
+TrailingTrigger=25
+TrailingStep=15
+UseEarlyExit=false
+EarlyExitScoreDrop=8.0
+PatternScanBars=18
+ChartPatternLookbackBars=20
+MaxLevelsToDraw=16

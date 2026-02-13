@@ -19,76 +19,76 @@
 #include "Include\Advanced\Dashboard.mqh"
 #include "Include\Advanced\Logger.mqh"
 
-// === MTF Settings ===
-input string         Timeframes   = "M1;M5;M15;H1;H4;D1;W1";
-input string         Weights      = "1;2;3;4;5;6;7";
-input ENUM_MA_METHOD IndicatorType = MODE_SMA;
-input int            MAPeriod     = 20;
-input double         Threshold    = 3.0;
+input group "تنظیمات چند تایم‌فریم (MTF)"
+input string         Timeframes   = "M1;M5;M15;H1;H4;D1;W1";      // تایم‌فریم‌ها (پیشنهادی برای اپتیمایز: M1 تا W1)
+input string         Weights      = "1;2;3;4;5;6;7";              // وزن تایم‌فریم‌ها (پیشنهادی: 1 تا 10)
+input ENUM_MA_METHOD IndicatorType = MODE_SMA;                     // نوع میانگین متحرک (پیشنهادی: SMA/EMA)
+input int            MAPeriod     = 20;                            // دوره MA (پیشنهادی: 10 تا 100)
+input double         Threshold    = 3.0;                           // آستانه ورود امتیاز (پیشنهادی: 1.0 تا 15.0)
 
-// === Risk Management ===
-input double         RiskPercent  = 2.0;
-input int            FixedSL      = 200;
-input int            FixedTP      = 400;
+input group "مدیریت ریسک"
+input double         RiskPercent  = 2.0;                           // درصد ریسک (پیشنهادی: 0.5 تا 3.0)
+input int            FixedSL      = 200;                           // حد ضرر ثابت (پیشنهادی: 80 تا 500)
+input int            FixedTP      = 400;                           // حد سود ثابت (پیشنهادی: 120 تا 900)
 
-// === Trade Settings ===
-input bool           AutoTrading  = true;
+input group "تنظیمات معامله"
+input bool           AutoTrading  = true;                          // معاملات خودکار (پیشنهادی: true/false)
 
-// === Level Detection ===
-input int            SwingStrength = 3;
-input int            MinPipsBetweenLevels = 50;
-input int            LevelLookbackBars = 250;
-input int            MinTouchCount = 2;
-input double         LevelWeight = 2.0;
-input int            MaxLevelsToDraw = 12;
+input group "تشخیص سطوح"
+input int            SwingStrength = 3;                            // قدرت سوئینگ (پیشنهادی: 2 تا 8)
+input int            MinPipsBetweenLevels = 50;                    // حداقل فاصله سطوح (پیشنهادی: 20 تا 250)
+input int            LevelLookbackBars = 250;                      // بازه اسکن سطوح (پیشنهادی: 100 تا 1000)
+input int            MinTouchCount = 2;                            // حداقل برخورد سطح (پیشنهادی: 1 تا 5)
+input double         LevelWeight = 2.0;                            // وزن سطوح (پیشنهادی: 0.5 تا 6.0)
+input int            MaxLevelsToDraw = 12;                         // حداکثر خطوط روی چارت (پیشنهادی: 4 تا 20)
 
-// === Dynamic SL/TP ===
-input bool           UseATRforSL = true;
-input int            ATRPeriod = 14;
-input double         ATRExtraMultiplier = 1.5;
+input group "حد ضرر/سود پویا"
+input bool           UseATRforSL = true;                           // استفاده از ATR برای SL (پیشنهادی: true/false)
+input int            ATRPeriod = 14;                               // دوره ATR (پیشنهادی: 7 تا 50)
+input double         ATRExtraMultiplier = 1.5;                     // ضریب ATR (پیشنهادی: 0.8 تا 3.0)
 
-// === Price Action Patterns ===
-input bool           EnableEngulfing = true;
-input bool           EnablePinBar = true;
-input bool           EnableDoji = true;
-input bool           EnableTweezer = true;
-input double         PatternWeight = 3.0;
-input int            MaxPatternDistanceFromLevel = 5;
-input int            PatternScanBars = 8;              // configurable scan range
+input group "الگوهای پرایس‌اکشن"
+input bool           EnableEngulfing = true;                        // فعال‌سازی انگالفینگ (پیشنهادی: true/false)
+input bool           EnablePinBar = true;                           // فعال‌سازی پین‌بار (پیشنهادی: true/false)
+input bool           EnableDoji = true;                             // فعال‌سازی دوجی (پیشنهادی: true/false)
+input bool           EnableTweezer = true;                          // فعال‌سازی تویزر (پیشنهادی: true/false)
+input double         PatternWeight = 3.0;                           // وزن الگوهای کندلی (پیشنهادی: 0.5 تا 8.0)
+input int            MaxPatternDistanceFromLevel = 5;               // فاصله مجاز از سطح (پیشنهادی: 2 تا 30)
+input int            PatternScanBars = 8;                           // بازه اسکن پترن کندلی (پیشنهادی: 3 تا 50)
 
-// === Chart Patterns ===
-input bool           EnableTriangle = true;
-input bool           EnableChannel = true;
-input bool           EnableRectangle = true;
-input double         ChartPatternWeight = 4.0;
-input int            ChartPatternLookbackBars = 30;    // configurable scan range
+input group "الگوهای نموداری"
+input bool           EnableTriangle = true;                        // فعال‌سازی مثلث (پیشنهادی: true/false)
+input bool           EnableChannel = true;                         // فعال‌سازی کانال (پیشنهادی: true/false)
+input bool           EnableRectangle = true;                       // فعال‌سازی مستطیل (پیشنهادی: true/false)
+input double         ChartPatternWeight = 4.0;                     // وزن الگوهای نموداری (پیشنهادی: 0.5 تا 10.0)
+input int            ChartPatternLookbackBars = 30;                // بازه اسکن الگوی نموداری (پیشنهادی: 10 تا 200)
 
-// === Advanced Trade Management ===
-input bool           UseBreakEven = true;
-input double         BreakEvenTrigger = 50;
-input bool           UseTrailing = true;
-input double         TrailingTrigger = 30;
-input int            TrailingStep = 20;
-input bool           UseEarlyExit = true;
-input double         EarlyExitScoreDrop = 5.0;
+input group "مدیریت پیشرفته معامله"
+input bool           UseBreakEven = true;                          // فعال‌سازی سر‌به‌سر (پیشنهادی: true/false)
+input double         BreakEvenTrigger = 50;                        // تریگر BE درصدی (پیشنهادی: 10 تا 90)
+input bool           UseTrailing = true;                           // فعال‌سازی تریلینگ (پیشنهادی: true/false)
+input double         TrailingTrigger = 30;                         // تریگر تریلینگ درصدی (پیشنهادی: 10 تا 90)
+input int            TrailingStep = 20;                            // گام تریلینگ (پیشنهادی: 5 تا 100)
+input bool           UseEarlyExit = true;                          // خروج زودهنگام (پیشنهادی: true/false)
+input double         EarlyExitScoreDrop = 5.0;                     // افت امتیاز خروج زودهنگام (پیشنهادی: 1.0 تا 20.0)
 
-// === External Data Module ===
-input bool           UseFundamentalData = true;
-input string         EconomicCalendarFile = "Data\\economic_calendar.csv";
-input string         SentimentFile = "Data\\sentiment.csv";
-input string         COTFile = "Data\\cot.csv";
-input double         FundamentalWeight = 5.0;
+input group "ماژول داده‌های خارجی"
+input bool           UseFundamentalData = true;                    // فعال‌سازی داده بنیادی (پیشنهادی: true/false)
+input string         EconomicCalendarFile = "Data\\economic_calendar.csv"; // فایل تقویم اقتصادی (پیشنهادی: مسیر CSV معتبر)
+input string         SentimentFile = "Data\\sentiment.csv";      // فایل سنتیمنت (پیشنهادی: مسیر CSV معتبر)
+input string         COTFile = "Data\\cot.csv";                  // فایل COT (پیشنهادی: مسیر CSV معتبر)
+input double         FundamentalWeight = 5.0;                      // وزن بنیادی (پیشنهادی: 0.5 تا 12.0)
 
-// === Panel Settings ===
-input bool           ShowPanel = true;
-input int            PanelX = 10;
-input int            PanelY = 20;
-input color          PanelBgColor = clrBlack;
-input color          PanelTextColor = clrWhite;
+input group "تنظیمات پنل"
+input bool           ShowPanel = true;                             // نمایش پنل (پیشنهادی: true/false)
+input int            PanelX = 10;                                  // موقعیت افقی پنل (پیشنهادی: 0 تا 1000)
+input int            PanelY = 20;                                  // موقعیت عمودی پنل (پیشنهادی: 0 تا 1000)
+input color          PanelBgColor = clrBlack;                      // رنگ پس‌زمینه پنل (پیشنهادی: clrBlack/دلخواه)
+input color          PanelTextColor = clrWhite;                    // رنگ متن پنل (پیشنهادی: clrWhite/دلخواه)
 
-// === Logger Settings ===
-input bool           EnableLogging = true;
-input string         LogPath = "Data\\logs\\";
+input group "تنظیمات لاگر"
+input bool           EnableLogging = true;                         // فعال‌سازی لاگ (پیشنهادی: true/false)
+input string         LogPath = "Data\\logs\\";                  // مسیر لاگ (پیشنهادی: Data\\logs\\)
 
 CMTFAnalyzer           *MTF;
 CScoreCalculator       *Scorer;
@@ -105,6 +105,20 @@ CLogger                *Logger;
 
 bool   g_autoTradingState = true;
 double g_prevGlobalScore = 0.0;
+string g_lastNoTradeReason = "";
+datetime g_lastNoTradeLogTime = 0;
+
+void LogNoTradeReason(const string reason)
+{
+   const datetime nowTime = TimeCurrent();
+   if(reason != g_lastNoTradeReason || (nowTime - g_lastNoTradeLogTime) >= 60)
+   {
+      Print("NoTrade: ", reason);
+      Logger.LogInfo("عدم ورود: " + reason);
+      g_lastNoTradeReason = reason;
+      g_lastNoTradeLogTime = nowTime;
+   }
+}
 
 int OnInit()
 {
@@ -145,7 +159,10 @@ int OnInit()
 void OnTick()
 {
    if(!MTF.Update() || !Levels.Update())
+   {
+      LogNoTradeReason("به‌روزرسانی MTF/Levels ناموفق بود.");
       return;
+   }
 
    const double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    const double nearestSupport = Zones.GetNearestSupport(currentPrice, MinTouchCount);
@@ -154,7 +171,10 @@ void OnTick()
    const double patternResistance = Zones.GetNearestResistance(currentPrice, 1);
 
    if(!Scorer.Update())
+   {
+      LogNoTradeReason("به‌روزرسانی Score ناموفق بود.");
       return;
+   }
 
    Scorer.ApplyLevelBias(currentPrice, nearestSupport, nearestResistance, LevelWeight);
    Scorer.ApplyPatternScore(Patterns.Update(patternSupport, patternResistance));
@@ -179,6 +199,8 @@ void OnTick()
    if(External.ShouldBlockAutoTrading())
    {
       Logger.LogFundamental("به دلیل خبر HIGH معاملات خودکار موقتاً متوقف شد.");
+      LogNoTradeReason("مسدود توسط خبر بنیادی HIGH.");
+      g_prevGlobalScore = Scorer.GetGlobalScore();
       return;
    }
 
@@ -187,14 +209,26 @@ void OnTick()
                      UseEarlyExit, Scorer.GetGlobalScore(), g_prevGlobalScore, EarlyExitScoreDrop);
 
    if(!g_autoTradingState)
+   {
+      LogNoTradeReason("AutoTrading غیرفعال است.");
+      g_prevGlobalScore = Scorer.GetGlobalScore();
       return;
+   }
 
    if(!Scorer.ShouldOpenTrade())
+   {
+      LogNoTradeReason("امتیاز به آستانه ورود نرسید.");
+      g_prevGlobalScore = Scorer.GetGlobalScore();
       return;
+   }
 
    const int finalDirection = Scorer.GetDirection();
    if(Trader.HasPositionInDirection(finalDirection))
+   {
+      LogNoTradeReason("پوزیشن هم‌جهت از قبل باز است.");
+      g_prevGlobalScore = Scorer.GetGlobalScore();
       return;
+   }
 
    const double lot = Risk.CalculateLot(RiskPercent, (double)FixedSL);
    double slPrice = 0.0;
@@ -205,6 +239,8 @@ void OnTick()
                                              slPrice, tpPrice))
    {
       Logger.LogRisk("محاسبه حجم/حدضرر/حدسود معتبر نبود.");
+      LogNoTradeReason("حجم یا SL/TP معتبر نبود.");
+      g_prevGlobalScore = Scorer.GetGlobalScore();
       return;
    }
 

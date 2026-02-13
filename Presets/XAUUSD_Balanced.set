@@ -1,0 +1,17 @@
+; XAUUSD_EA Balanced
+RiskPercent=1.5
+Threshold=4.0
+LevelWeight=2.5
+PatternWeight=3.0
+ChartPatternWeight=4.0
+FundamentalWeight=5.0
+UseBreakEven=true
+BreakEvenTrigger=50
+UseTrailing=true
+TrailingTrigger=35
+TrailingStep=20
+UseEarlyExit=true
+EarlyExitScoreDrop=5.0
+PatternScanBars=10
+ChartPatternLookbackBars=30
+MaxLevelsToDraw=12

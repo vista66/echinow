@@ -25,3 +25,12 @@ Testing Notes:
 - Put CSV files in Common\Files\Data\
 - Check panel button clicks in visual tester.
 - Check logs for Persian entries and fundamental blocking state.
+
+5. Persian-friendly settings:
+   - Input groups are in Persian.
+   - Each input has Persian description with suggested optimization range in parentheses.
+
+6. Stabilization + Backtest + Presets completed:
+   - Throttled NoTrade diagnostics added in EA runtime.
+   - Backtest pack docs: Docs/Backtest_Pack.md, Docs/Optimization_Summary.md
+   - Ready presets: Presets/XAUUSD_Conservative.set, Presets/XAUUSD_Balanced.set, Presets/XAUUSD_Aggressive.set
