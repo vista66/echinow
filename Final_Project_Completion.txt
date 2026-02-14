@@ -1,0 +1,25 @@
+Project Completion Declaration - XAUUSD_EA
+
+Status: COMPLETED (Phases 1 to 4 implemented)
+
+Delivered:
+- Phase 1: Core MTF scoring, risk, execution.
+- Phase 2: Level detection + dynamic SL/TP.
+- Phase 3: Price-action + chart-pattern detection with visibility/clutter hotfixes.
+- Phase 4: Advanced trade management, dashboard, external data, Persian logger.
+
+Finalization extras:
+- Stabilization step completed:
+  - Added throttled NoTrade diagnostics in EA logic.
+  - Added clearer reason logging for skipped entries.
+- Backtest pack completed:
+  - Docs/Backtest_Pack.md
+  - Docs/Optimization_Summary.md
+- Optimization presets completed:
+  - Presets/XAUUSD_Conservative.set
+  - Presets/XAUUSD_Balanced.set
+  - Presets/XAUUSD_Aggressive.set
+
+Remaining for user-side execution (platform-dependent):
+- Compile/run Strategy Tester in MT5.
+- Fill optimization summary with real broker data outputs.
