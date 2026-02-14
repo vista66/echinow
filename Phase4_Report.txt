@@ -1,0 +1,51 @@
+Phase 4 Report:
+- New modules:
+  - Include\Advanced\AdvancedTradeManager.mqh
+  - Include\Advanced\ExternalDataModule.mqh
+  - Include\Advanced\Dashboard.mqh
+  - Include\Advanced\Logger.mqh
+  - Include\Utils\CSVReader.mqh
+- Updated modules:
+  - Include\Core\ScoreCalculator.mqh (fundamental score channel)
+  - XAUUSD_EA.mq5 (advanced management, panel, logger, external data, timer/chart events)
+
+Key Notes:
+1. Pattern scan range is configurable in inputs:
+   - PatternScanBars
+   - ChartPatternLookbackBars
+2. Level clutter is controlled by:
+   - MaxLevelsToDraw
+   - MinTouchCount
+3. Dashboard supports:
+   - Auto Trade ON/OFF button
+   - Close All button
+4. Logger writes daily files into Data\logs\ under FILE_COMMON mode.
+
+Testing Notes:
+- Put CSV files in Common\Files\Data\
+- Check panel button clicks in visual tester.
+- Check logs for Persian entries and fundamental blocking state.
+
+5. Persian-friendly settings:
+   - Input groups are in Persian.
+   - Each input has Persian description with suggested optimization range in parentheses.
+
+6. Stabilization + Backtest + Presets completed:
+   - Throttled NoTrade diagnostics added in EA runtime.
+   - Backtest pack docs: Docs/Backtest_Pack.md, Docs/Optimization_Summary.md
+   - Ready presets: Presets/XAUUSD_Conservative.set, Presets/XAUUSD_Balanced.set, Presets/XAUUSD_Aggressive.set
+
+7. Optimizer-friendly MTF controls:
+   - Added UseStructuredMTFInputs for optimizer-safe timeframe/weight setup.
+   - Added per-timeframe flags/weights: UseTF_M1..UseTF_W1 and Weight_M1..Weight_W1.
+   - If all structured TF flags are off, EA falls back to string inputs Timeframes/Weights.
+
+8. Optimization performance mode:
+   - In MT5 optimization agents, runtime disables heavy components automatically: panel, level drawing, file logging, and fundamental CSV reads.
+   - Verbose Print logs are muted in optimization mode.
+   - Chart pattern status objects are disabled in optimization mode (empty prefix).
+
+9. Tester/Optimization anti-freeze improvements:
+   - Added ProcessSignalsOnNewBar to evaluate signals once per bar (huge load reduction on real ticks).
+   - Added MarketClosedRetrySec to prevent repeated OrderSend spam when market is closed.
+   - TradeExecutor now applies retry cooldown on TRADE_RETCODE_MARKET_CLOSED.
