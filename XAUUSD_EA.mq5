@@ -22,6 +22,24 @@
 input group "تنظیمات چند تایم‌فریم (MTF)"
 input string         Timeframes   = "M1;M5;M15;H1;H4;D1;W1";      // تایم‌فریم‌ها (پیشنهادی برای اپتیمایز: M1 تا W1)
 input string         Weights      = "1;2;3;4;5;6;7";              // وزن تایم‌فریم‌ها (پیشنهادی: 1 تا 10)
+input bool           UseStructuredMTFInputs = true;                // استفاده از ورودی‌های جداگانه برای بهینه‌سازی (پیشنهادی: true)
+
+// ورودی‌های قابل بهینه‌سازی برای تایم‌فریم/وزن
+input bool           UseTF_M1 = true;                              // فعال‌سازی M1 (پیشنهادی: true/false)
+input double         Weight_M1 = 1.0;                              // وزن M1 (پیشنهادی: 0.0 تا 20.0)
+input bool           UseTF_M5 = true;                              // فعال‌سازی M5 (پیشنهادی: true/false)
+input double         Weight_M5 = 2.0;                              // وزن M5 (پیشنهادی: 0.0 تا 20.0)
+input bool           UseTF_M15 = true;                             // فعال‌سازی M15 (پیشنهادی: true/false)
+input double         Weight_M15 = 3.0;                             // وزن M15 (پیشنهادی: 0.0 تا 20.0)
+input bool           UseTF_H1 = true;                              // فعال‌سازی H1 (پیشنهادی: true/false)
+input double         Weight_H1 = 4.0;                              // وزن H1 (پیشنهادی: 0.0 تا 20.0)
+input bool           UseTF_H4 = true;                              // فعال‌سازی H4 (پیشنهادی: true/false)
+input double         Weight_H4 = 5.0;                              // وزن H4 (پیشنهادی: 0.0 تا 20.0)
+input bool           UseTF_D1 = true;                              // فعال‌سازی D1 (پیشنهادی: true/false)
+input double         Weight_D1 = 6.0;                              // وزن D1 (پیشنهادی: 0.0 تا 20.0)
+input bool           UseTF_W1 = true;                              // فعال‌سازی W1 (پیشنهادی: true/false)
+input double         Weight_W1 = 7.0;                              // وزن W1 (پیشنهادی: 0.0 تا 20.0)
+
 input ENUM_MA_METHOD IndicatorType = MODE_SMA;                     // نوع میانگین متحرک (پیشنهادی: SMA/EMA)
 input int            MAPeriod     = 20;                            // دوره MA (پیشنهادی: 10 تا 100)
 input double         Threshold    = 3.0;                           // آستانه ورود امتیاز (پیشنهادی: 1.0 تا 15.0)
@@ -108,6 +126,56 @@ double g_prevGlobalScore = 0.0;
 string g_lastNoTradeReason = "";
 datetime g_lastNoTradeLogTime = 0;
 
+string g_effectiveTimeframes = "";
+string g_effectiveWeights = "";
+
+void AppendTFWeight(const bool enabled,
+                    const string tf,
+                    const double weight,
+                    string &tfList,
+                    string &wList)
+{
+   if(!enabled)
+      return;
+
+   if(StringLen(tfList) > 0)
+   {
+      tfList += ";";
+      wList += ";";
+   }
+
+   tfList += tf;
+   wList += DoubleToString(weight, 2);
+}
+
+void BuildEffectiveMTFInputs(string &tfList, string &wList)
+{
+   tfList = "";
+   wList = "";
+
+   if(!UseStructuredMTFInputs)
+   {
+      tfList = Timeframes;
+      wList = Weights;
+      return;
+   }
+
+   AppendTFWeight(UseTF_M1, "M1", Weight_M1, tfList, wList);
+   AppendTFWeight(UseTF_M5, "M5", Weight_M5, tfList, wList);
+   AppendTFWeight(UseTF_M15, "M15", Weight_M15, tfList, wList);
+   AppendTFWeight(UseTF_H1, "H1", Weight_H1, tfList, wList);
+   AppendTFWeight(UseTF_H4, "H4", Weight_H4, tfList, wList);
+   AppendTFWeight(UseTF_D1, "D1", Weight_D1, tfList, wList);
+   AppendTFWeight(UseTF_W1, "W1", Weight_W1, tfList, wList);
+
+   // اگر هیچ تایم‌فریمی فعال نبود، به ورودی رشته‌ای برگرد
+   if(StringLen(tfList) == 0 || StringLen(wList) == 0)
+   {
+      tfList = Timeframes;
+      wList = Weights;
+   }
+}
+
 void LogNoTradeReason(const string reason)
 {
    const datetime nowTime = TimeCurrent();
@@ -136,9 +204,11 @@ int OnInit()
    Logger = new CLogger();
 
    g_autoTradingState = AutoTrading;
+   BuildEffectiveMTFInputs(g_effectiveTimeframes, g_effectiveWeights);
+   Print("Effective MTF config | TFs=", g_effectiveTimeframes, " | Weights=", g_effectiveWeights);
 
-   if(!MTF.Initialize(_Symbol, Timeframes, IndicatorType, MAPeriod)) return INIT_FAILED;
-   if(!Scorer.Initialize(MTF, Weights, Threshold)) return INIT_FAILED;
+   if(!MTF.Initialize(_Symbol, g_effectiveTimeframes, IndicatorType, MAPeriod)) return INIT_FAILED;
+   if(!Scorer.Initialize(MTF, g_effectiveWeights, Threshold)) return INIT_FAILED;
    if(!Risk.Initialize(_Symbol)) return INIT_FAILED;
    if(!Trader.Initialize(_Symbol)) return INIT_FAILED;
    if(!Zones.Initialize(_Symbol, "XAU_Level_")) return INIT_FAILED;

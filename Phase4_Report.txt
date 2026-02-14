@@ -34,3 +34,8 @@ Testing Notes:
    - Throttled NoTrade diagnostics added in EA runtime.
    - Backtest pack docs: Docs/Backtest_Pack.md, Docs/Optimization_Summary.md
    - Ready presets: Presets/XAUUSD_Conservative.set, Presets/XAUUSD_Balanced.set, Presets/XAUUSD_Aggressive.set
+
+7. Optimizer-friendly MTF controls:
+   - Added UseStructuredMTFInputs for optimizer-safe timeframe/weight setup.
+   - Added per-timeframe flags/weights: UseTF_M1..UseTF_W1 and Weight_M1..Weight_W1.
+   - If all structured TF flags are off, EA falls back to string inputs Timeframes/Weights.
