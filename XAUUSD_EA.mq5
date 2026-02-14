@@ -51,6 +51,8 @@ input int            FixedTP      = 400;                           // حد سو�
 
 input group "تنظیمات معامله"
 input bool           AutoTrading  = true;                          // معاملات خودکار (پیشنهادی: true/false)
+input bool           ProcessSignalsOnNewBar = true;                // فقط روی کندل جدید سیگنال بگیر (پیشنهادی: true)
+input int            MarketClosedRetrySec = 60;                    // تاخیر تلاش مجدد بعد از Market Closed (پیشنهادی: 30 تا 600)
 
 input group "تشخیص سطوح"
 input int            SwingStrength = 3;                            // قدرت سوئینگ (پیشنهادی: 2 تا 8)
@@ -132,6 +134,7 @@ bool   g_runtimeShowPanel = true;
 bool   g_runtimeEnableLogging = true;
 bool   g_runtimeDrawLevels = true;
 bool   g_runtimeVerboseLogs = true;
+bool   g_runtimeProcessOnNewBar = false;
 
 string g_effectiveTimeframes = "";
 string g_effectiveWeights = "";
@@ -198,6 +201,21 @@ void LogNoTradeReason(const string reason)
    }
 }
 
+bool IsNewBar()
+{
+   static datetime lastBarTime = 0;
+   const datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
+   if(currentBarTime == 0)
+      return false;
+
+   if(currentBarTime != lastBarTime)
+   {
+      lastBarTime = currentBarTime;
+      return true;
+   }
+   return false;
+}
+
 int OnInit()
 {
    MTF = new CMTFAnalyzer();
@@ -222,6 +240,7 @@ int OnInit()
    g_runtimeEnableLogging = EnableLogging;
    g_runtimeDrawLevels = true;
    g_runtimeVerboseLogs = true;
+   g_runtimeProcessOnNewBar = ProcessSignalsOnNewBar;
 
    if(g_isOptimization)
    {
@@ -230,7 +249,11 @@ int OnInit()
       g_runtimeEnableLogging = false;
       g_runtimeDrawLevels = false;
       g_runtimeVerboseLogs = false;
+      g_runtimeProcessOnNewBar = true;
    }
+
+   if(MQLInfoInteger(MQL_TESTER) > 0 && !MQLInfoInteger(MQL_VISUAL_MODE))
+      g_runtimeProcessOnNewBar = true;
 
    BuildEffectiveMTFInputs(g_effectiveTimeframes, g_effectiveWeights);
    if(g_runtimeVerboseLogs)
@@ -240,6 +263,7 @@ int OnInit()
    if(!Scorer.Initialize(MTF, g_effectiveWeights, Threshold)) return INIT_FAILED;
    if(!Risk.Initialize(_Symbol)) return INIT_FAILED;
    if(!Trader.Initialize(_Symbol)) return INIT_FAILED;
+   Trader.SetRetrySecondsOnMarketClosed(MarketClosedRetrySec);
    if(!Zones.Initialize(_Symbol, "XAU_Level_")) return INIT_FAILED;
    if(!Levels.Initialize(_Symbol, PERIOD_H1, SwingStrength, LevelLookbackBars, (double)MinPipsBetweenLevels, Zones)) return INIT_FAILED;
    if(!Patterns.Initialize(_Symbol, PERIOD_H1, EnableEngulfing, EnablePinBar, EnableDoji, EnableTweezer,
@@ -259,6 +283,9 @@ int OnInit()
 
 void OnTick()
 {
+   if(g_runtimeProcessOnNewBar && !IsNewBar())
+      return;
+
    if(!MTF.Update() || !Levels.Update())
    {
       LogNoTradeReason("به‌روزرسانی MTF/Levels ناموفق بود.");

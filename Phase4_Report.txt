@@ -44,3 +44,8 @@ Testing Notes:
    - In MT5 optimization agents, runtime disables heavy components automatically: panel, level drawing, file logging, and fundamental CSV reads.
    - Verbose Print logs are muted in optimization mode.
    - Chart pattern status objects are disabled in optimization mode (empty prefix).
+
+9. Tester/Optimization anti-freeze improvements:
+   - Added ProcessSignalsOnNewBar to evaluate signals once per bar (huge load reduction on real ticks).
+   - Added MarketClosedRetrySec to prevent repeated OrderSend spam when market is closed.
+   - TradeExecutor now applies retry cooldown on TRADE_RETCODE_MARKET_CLOSED.

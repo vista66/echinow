@@ -30,3 +30,5 @@ UseTF_D1=true
 Weight_D1=6.0
 UseTF_W1=true
 Weight_W1=7.0
+ProcessSignalsOnNewBar=true
+MarketClosedRetrySec=60
