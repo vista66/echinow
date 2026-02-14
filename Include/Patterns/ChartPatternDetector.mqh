@@ -161,6 +161,9 @@ public:
 
    void DrawStatus() const
    {
+      if(StringLen(m_objectPrefix) == 0)
+         return;
+
       const string name = m_objectPrefix + "Label";
       if(ObjectFind(0, name) < 0)
       {

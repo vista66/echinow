@@ -125,6 +125,13 @@ bool   g_autoTradingState = true;
 double g_prevGlobalScore = 0.0;
 string g_lastNoTradeReason = "";
 datetime g_lastNoTradeLogTime = 0;
+bool   g_isOptimization = false;
+
+bool   g_runtimeUseFundamentalData = true;
+bool   g_runtimeShowPanel = true;
+bool   g_runtimeEnableLogging = true;
+bool   g_runtimeDrawLevels = true;
+bool   g_runtimeVerboseLogs = true;
 
 string g_effectiveTimeframes = "";
 string g_effectiveWeights = "";
@@ -178,6 +185,9 @@ void BuildEffectiveMTFInputs(string &tfList, string &wList)
 
 void LogNoTradeReason(const string reason)
 {
+   if(!g_runtimeVerboseLogs)
+      return;
+
    const datetime nowTime = TimeCurrent();
    if(reason != g_lastNoTradeReason || (nowTime - g_lastNoTradeLogTime) >= 60)
    {
@@ -204,8 +214,27 @@ int OnInit()
    Logger = new CLogger();
 
    g_autoTradingState = AutoTrading;
+   g_isOptimization = (MQLInfoInteger(MQL_OPTIMIZATION) > 0);
+
+   // Runtime performance switches for optimization/tester agents
+   g_runtimeUseFundamentalData = UseFundamentalData;
+   g_runtimeShowPanel = ShowPanel;
+   g_runtimeEnableLogging = EnableLogging;
+   g_runtimeDrawLevels = true;
+   g_runtimeVerboseLogs = true;
+
+   if(g_isOptimization)
+   {
+      g_runtimeUseFundamentalData = false;
+      g_runtimeShowPanel = false;
+      g_runtimeEnableLogging = false;
+      g_runtimeDrawLevels = false;
+      g_runtimeVerboseLogs = false;
+   }
+
    BuildEffectiveMTFInputs(g_effectiveTimeframes, g_effectiveWeights);
-   Print("Effective MTF config | TFs=", g_effectiveTimeframes, " | Weights=", g_effectiveWeights);
+   if(g_runtimeVerboseLogs)
+      Print("Effective MTF config | TFs=", g_effectiveTimeframes, " | Weights=", g_effectiveWeights);
 
    if(!MTF.Initialize(_Symbol, g_effectiveTimeframes, IndicatorType, MAPeriod)) return INIT_FAILED;
    if(!Scorer.Initialize(MTF, g_effectiveWeights, Threshold)) return INIT_FAILED;
@@ -215,14 +244,16 @@ int OnInit()
    if(!Levels.Initialize(_Symbol, PERIOD_H1, SwingStrength, LevelLookbackBars, (double)MinPipsBetweenLevels, Zones)) return INIT_FAILED;
    if(!Patterns.Initialize(_Symbol, PERIOD_H1, EnableEngulfing, EnablePinBar, EnableDoji, EnableTweezer,
                            PatternWeight, (double)MaxPatternDistanceFromLevel, PatternScanBars)) return INIT_FAILED;
+   const string chartPatternObjectPrefix = g_isOptimization ? "" : "XAU_ChartPattern_";
    if(!ChartPatterns.Initialize(_Symbol, PERIOD_H1, EnableTriangle, EnableChannel, EnableRectangle,
-                                ChartPatternWeight, ChartPatternLookbackBars, "XAU_ChartPattern_")) return INIT_FAILED;
+                                ChartPatternWeight, ChartPatternLookbackBars, chartPatternObjectPrefix)) return INIT_FAILED;
    if(!AdvManager.Initialize(_Symbol)) return INIT_FAILED;
-   if(!External.Initialize(UseFundamentalData, EconomicCalendarFile, SentimentFile, COTFile, FundamentalWeight)) return INIT_FAILED;
-   if(!Dash.Initialize(ShowPanel, PanelX, PanelY, PanelBgColor, PanelTextColor)) return INIT_FAILED;
-   if(!Logger.Initialize(EnableLogging, LogPath)) return INIT_FAILED;
+   if(!External.Initialize(g_runtimeUseFundamentalData, EconomicCalendarFile, SentimentFile, COTFile, FundamentalWeight)) return INIT_FAILED;
+   if(!Dash.Initialize(g_runtimeShowPanel, PanelX, PanelY, PanelBgColor, PanelTextColor)) return INIT_FAILED;
+   if(!Logger.Initialize(g_runtimeEnableLogging, LogPath)) return INIT_FAILED;
 
-   EventSetTimer(1);
+   if(g_runtimeShowPanel)
+      EventSetTimer(1);
    return(INIT_SUCCEEDED);
 }
 
@@ -251,10 +282,11 @@ void OnTick()
    Scorer.ApplyChartPatternScore(ChartPatterns.Update());
 
    const int direction = Scorer.GetDirection();
-   const double fundamentalScore = External.UpdateAndScore(direction);
+   const double fundamentalScore = g_runtimeUseFundamentalData ? External.UpdateAndScore(direction) : 0.0;
    Scorer.ApplyFundamentalScore(fundamentalScore);
 
-   Zones.DrawFiltered(currentPrice, MinTouchCount, MaxLevelsToDraw, clrLime, clrTomato);
+   if(g_runtimeDrawLevels)
+      Zones.DrawFiltered(currentPrice, MinTouchCount, MaxLevelsToDraw, clrLime, clrTomato);
 
    string logLine = Scorer.BuildScoreLog() +
                     " | LevelScore=" + DoubleToString(Scorer.GetLevelScore(), 2) +
@@ -263,10 +295,11 @@ void OnTick()
                     " | FundamentalScore=" + DoubleToString(Scorer.GetFundamentalScore(), 2) +
                     " | PA=" + Patterns.GetLastPattern() +
                     " | CP=" + ChartPatterns.GetLastPattern();
-   Print(logLine);
+   if(g_runtimeVerboseLogs)
+      Print(logLine);
    Logger.LogInfo("امتیاز کلی: " + DoubleToString(Scorer.GetGlobalScore(), 2) + " | " + External.GetLastSummary());
 
-   if(External.ShouldBlockAutoTrading())
+   if(g_runtimeUseFundamentalData && External.ShouldBlockAutoTrading())
    {
       Logger.LogFundamental("به دلیل خبر HIGH معاملات خودکار موقتاً متوقف شد.");
       LogNoTradeReason("مسدود توسط خبر بنیادی HIGH.");
@@ -322,7 +355,7 @@ void OnTick()
 
 void OnTimer()
 {
-   if(!ShowPanel)
+   if(!g_runtimeShowPanel)
       return;
 
    string tradeInfo = "No Position";
@@ -361,7 +394,8 @@ void OnChartEvent(const int id, const long& lparam, const double& dparam, const 
 
 void OnDeinit(const int reason)
 {
-   EventKillTimer();
+   if(g_runtimeShowPanel)
+      EventKillTimer();
    delete MTF;
    delete Scorer;
    delete Risk;

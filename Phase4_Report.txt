@@ -39,3 +39,8 @@ Testing Notes:
    - Added UseStructuredMTFInputs for optimizer-safe timeframe/weight setup.
    - Added per-timeframe flags/weights: UseTF_M1..UseTF_W1 and Weight_M1..Weight_W1.
    - If all structured TF flags are off, EA falls back to string inputs Timeframes/Weights.
+
+8. Optimization performance mode:
+   - In MT5 optimization agents, runtime disables heavy components automatically: panel, level drawing, file logging, and fundamental CSV reads.
+   - Verbose Print logs are muted in optimization mode.
+   - Chart pattern status objects are disabled in optimization mode (empty prefix).
